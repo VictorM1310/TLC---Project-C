@@ -26,24 +26,28 @@ int CargaTokens(char *nomArchivo, arregloChar2D *aC)
                     if(s[0]=='"')
                     {
                         char arrayTemp[256];
+                        memset(arrayTemp,0,256);
+                        strcat(arrayTemp,s);
                         do
                         {
-                            strcat(arrayTemp,s);
-                            s = strtok_r(NULL, " \t\n", &ptr);
                             strcat(arrayTemp, " ");
+                            s = strtok_r(NULL, " \t\n", &ptr);
+                            strcat(arrayTemp,s);
 
                         }while(s[0]!='"');
-                        strcat(arrayTemp,s);
                         strncpy (aC->A[i], arrayTemp, 255);
-                        memset(arrayTemp,0,256);
-                        s = strtok_r(linea, " \t\n", &ptr);
                         printf("Esta es la posicion %d: %s\n",i,aC->A[i]);
+                        i++;
+                        s=NULL;
                     }
-                    i++;
-                    strncpy (aC->A[i], s, 255);
-                    printf("Esta es la posicion %d: %s\n",i,aC->A[i]);
-                    s = strtok_r(NULL, " \t\n", &ptr);
-
+                    else
+                    {
+                        strncpy (aC->A[i], s, 255);
+                        printf("Esta es la posicion %d: %s\n",i,aC->A[i]);
+                        s = strtok_r(NULL, " \t\n", &ptr);
+                        i++;
+                        printf("s vale: %s\n",s);
+                    }
                 } while (s != NULL);
                 printf("\n");
             }
@@ -51,6 +55,7 @@ int CargaTokens(char *nomArchivo, arregloChar2D *aC)
                 printf("No hay token que leer\n");
 
         }
+        printf("i vale: %d\n",i);
 	}
 	return 0;
 }
@@ -58,7 +63,7 @@ int CargaTokens(char *nomArchivo, arregloChar2D *aC)
 int main(int argc, char **argv)
 {
     arregloChar2D Q;
-    unsigned int r = 40, c = 100;
+    unsigned int r = 100, c = 100;
     initArregloChar2D(&Q,r,c);
 
 	if (argc>1)
@@ -71,6 +76,11 @@ int main(int argc, char **argv)
       fprintf(stderr, "Error: Se tiene que pasar como argumento el archivo que contiene la base de datos\n");
       exit(1);
     }
+
     imprimeArregloC2D(&Q);
+
+    printf("Esta son las pruebas\n");
+    printf("A[%d] es: %s\n",23,Q.A[23]);
+    printf("A[%d] es: %s\n",32,Q.A[32]);
     return 0;
 }
