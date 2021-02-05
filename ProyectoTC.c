@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ArregloTokens.h"
-int CargaTokens(char *nomArchivo, arregloChar2D *aC)
+
+int CargaTokens(char *nomArchivo, char Tokens[][256])
 {
     FILE *arch;
     arch = fopen (nomArchivo, "r");
@@ -35,15 +36,15 @@ int CargaTokens(char *nomArchivo, arregloChar2D *aC)
                             strcat(arrayTemp,s);
 
                         }while(s[0]!='"');
-                        strncpy (aC->A[i], arrayTemp, 255);
-                        printf("Esta es la posicion %d: %s\n",i,aC->A[i]);
+                        strncpy (Tokens[i], arrayTemp, 255);
+                        printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         i++;
                         s=NULL;
                     }
                     else
                     {
-                        strncpy (aC->A[i], s, 255);
-                        printf("Esta es la posicion %d: %s\n",i,aC->A[i]);
+                        strncpy (Tokens[i], s, 255);
+                        printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         s = strtok_r(NULL, " \t\n", &ptr);
                         i++;
                     }
@@ -58,127 +59,129 @@ int CargaTokens(char *nomArchivo, arregloChar2D *aC)
 	}
 	return 0;
 }
-int CompPalabraReserv(arregloChar2D *aC,unsigned int i)
-{
-    if(strcmp(aC->A[i],"PROGRAMA") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"FINPROG") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"SI") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"ENTONCES") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"SINO") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"FINSI") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"REPITE") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"VECES") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"FINREP") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"IMPRIME") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"LEE") != 0)
-        return -1;
+int CompPalabraReserv(char Tokens[][256], unsigned int i)
+{   
+    
+    if(strcmp(Tokens[i],"PROGRAMA") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"FINPROG") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"SI") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"ENTONCES") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"SINO") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"FINSI") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"REPITE") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"VECES") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"FINREP") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"IMPRIME") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"LEE") == 0)
+        return 0;
 
-    return 0;
+    return -1;
 }
-int CompOperRel(arregloChar2D *aC, unsigned i)
+int CompOperRel(char Tokens[][256], unsigned int i)
 {
-    if(strcmp(aC->A[i],">") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"<") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"==") != 0)
-        return -1;
+    if(strcmp(Tokens[i],">") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"<") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"==") == 0)
+        return 0;
 
-    return 0;
+    return -1;
 }
-int CompOperArit(arregloChar2D *aC,unsigned int i)
+int CompOperArit(char Tokens[][256],unsigned int i)
 {
-    if(strcmp(aC->A[i],"+") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"-") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"*") != 0)
-        return -1;
-    if(strcmp(aC->A[i],"/") != 0)
-        return -1;
+    if(strcmp(Tokens[i],"+") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"-") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"*") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"/") == 0)
+        return 0;
 
-    return 0;
-}
-
-int CompAsig(arregloChar2D *aC,unsigned int i)
-{
-    if(strcmp(aC->A[i],"=") != 0)
-        return -1;
-
-    return 0;
+    return -1;
 }
 
-int CompLiteralNum(arregloChar2D *aC,unsigned int i)
+int CompAsig(char Tokens[][256],unsigned int i)
+{
+    if(strcmp(Tokens[i],"=") == 0)
+        return 0;
+
+    return -1;
+}
+
+int CompLiteralNum(char Tokens[][256],unsigned int i)
 {
     unsigned int tama = 0;
-    unsigned int LiteralInvalida = 0;
-    tama = strlen(aC->A[i]);
+    unsigned int DigitoInvalido = 0;
+    tama = strlen(Tokens[i]);
     for(int j=0; j<tama; j++)
     {
-        if (isdigit(aC->A[i][j])==0)
+        if (isdigit(Tokens[i][j])==0)
             return -1;
-        if(aC->A[i][j] == '8'||aC->A[i][j] == '9')
-            LiteralInvalida = 1;
+        if(Tokens[i][j] == '8'||Tokens[i][j] == '9')
+            DigitoInvalido = 1;
     }
-    if(LiteralInvalida == 1)
+    if(DigitoInvalido == 1)
     {
         printf("Es invalida\n");
         return -1;
     }
     return 0;
 }
-int CompIdent(arregloChar2D *aC,unsigned int i)
+int CompIdent(char Tokens[][256],unsigned int i)
 {
-    if(isdigit(aC->A[i][0]) == 0)
-        return -1;
+    if(isdigit(Tokens[i][0]) == 0)
+        return 0;
 
-    return 0;
+    return -1;
 }
-void ClasificaTokens(arregloChar2D *aC, unsigned int i, char IDX[][256], char TXT[][256],char VALS[][256],char OPERAR[][256],char OPERREL[][256])
+void ClasificaTokens(char Tokens[][256], unsigned int i, char IDX[][256], char TXT[][256],char VALS[][256],char OPERAR[][256],char OPERREL[][256])
 {
-    if(CompPalabraReserv((aC->A[i]),i) == 0)
+   
+    if(CompPalabraReserv((Tokens),i) == 0)
     {
-        printf("Token %s en Token[%d] es palabra reservada\n",aC->A[i],i);
+        printf("Token %s en Token[%d] es palabra reservada\n",Tokens[i],i);
     }
     else
     {
-        if(CompOperArit((aC->A[i]),i) == 0)
+        if(CompOperArit((Tokens),i) == 0)
         {
-            printf("Token %s en Token[%d] es operador aritmetico\n",aC->A[i],i);
+            printf("Token %s en Token[%d] es operador aritmetico\n",Tokens[i],i);
         }
         else
         {
-            if(CompOperRel((aC->A[i]),i) == 0)
+            if(CompOperRel((Tokens),i) == 0)
             {
-                printf("Token %s en Token[%d] es operador relacional\n",aC->A[i],i);
+                printf("Token %s en Token[%d] es operador relacional\n",Tokens[i],i);
             }
             else
             {
-                if(CompAsig((aC->A[i]),i) == 0)
+                if(CompAsig((Tokens),i) == 0)
                 {
-                    printf("Token %s en Token[%d] es operador de asignacion\n",aC->A[i],i);
+                    printf("Token %s en Token[%d] es operador de asignacion\n",Tokens[i],i);
                 }
                 else
                 {
-                    if(CompLiteralNum((aC->A[i]),i) == 0)
+                    if(CompLiteralNum((Tokens),i) == 0)
                     {
-                        printf("Token %s en Token[%d] es literal numerica\n",aC->A[i],i);
+                        printf("Token %s en Token[%d] es literal numerica\n",Tokens[i],i);
                     }
                     else
                     {
-                        if(CompIdent((aC->A[i]),i) == 0)
+                        if(CompIdent((Tokens),i) == 0)
                         {
-                            printf("Token %s en Token[%d] es identificador\n",aC->A[i],i);
+                            printf("Token %s en Token[%d] es identificador\n",Tokens[i],i);
                         }
                         else
                         {
@@ -193,19 +196,19 @@ void ClasificaTokens(arregloChar2D *aC, unsigned int i, char IDX[][256], char TX
 
 int main(int argc, char **argv)
 {
-    arregloChar2D Tokens;
+    char Tokens[40][256];
     char IDX[50][256];
     char TXT[50][256];
     char VALS[50][256];
     char OPERAR[50][256];
     char OPERREL[50][256];
 
-    unsigned int r = 50, c = 100;
-    initArregloChar2D(&Tokens,r,c);
+    //unsigned int r = 50, c = 100;
+    //initArregloChar2D(&Tokens,r,c);
 
 	if (argc>1)
     {
-      if (CargaTokens(argv[1], &Tokens) < 0)
+      if (CargaTokens(argv[1], Tokens) < 0)
          exit(1);
     }
     else
@@ -214,16 +217,21 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-    imprimeArregloC2D(&Tokens);
+    //imprimeArregloC2D(Tokens);
     int i=0;
-    while(Tokens.A[i])
-    {
-        ClasificaTokens(&Tokens, i, IDX, TXT, VALS, OPERAR, OPERREL);
-        i++;
-    }
+    printf("Inicia la comparacion \n");
 
-    liberaArregloChar2D(&Tokens);
+
+   while(Tokens[i] != NULL)
+   {
+       ClasificaTokens(Tokens, i, IDX, TXT, VALS, OPERAR, OPERREL);
+       i++;
+   }
+    
+    
+
+    //liberaArregloChar2D(&Tokens);
     printf("Este es el arreglo despues de liberarlo:\n");
-    imprimeArregloC2D(&Tokens);
+    //imprimeArregloC2D(Tokens);
     return 0;
 }
