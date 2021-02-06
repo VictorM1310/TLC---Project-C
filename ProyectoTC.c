@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ArregloTokens.h"
-
+int MAXT=0;
 int CargaTokens(char *nomArchivo, char Tokens[][256])
 {
     FILE *arch;
@@ -34,16 +34,19 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                             strcat(arrayTemp, " ");
                             s = strtok_r(NULL, " \t\n", &ptr);
                             strcat(arrayTemp,s);
-
                         }while(s[0]!='"');
                         strncpy (Tokens[i], arrayTemp, 255);
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
+                        printf("La longitud de la cadena es: %ld\n",strlen(arrayTemp));
+                        Tokens[i][strlen(arrayTemp)-1]='\0';
                         i++;
                         s=NULL;
                     }
                     else
                     {
                         strncpy (Tokens[i], s, 255);
+                        printf("La longitud de la cadena es: %ld\n",strlen(s));
+                        Tokens[i][strlen(s)] = '\0';
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         s = strtok_r(NULL, " \t\n", &ptr);
                         i++;
@@ -56,15 +59,14 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
 
         }
         printf("i vale: %d\n",i);
+        MAXT=i;
 	}
 	return 0;
 }
 int CompPalabraReserv(char Tokens[][256], unsigned int i)
-{   
-    
+{
+
     if(strcmp(Tokens[i],"PROGRAMA") == 0)
-        return 0;
-    if(strcmp(Tokens[i],"FINPROG") == 0)
         return 0;
     if(strcmp(Tokens[i],"SI") == 0)
         return 0;
@@ -83,6 +85,8 @@ int CompPalabraReserv(char Tokens[][256], unsigned int i)
     if(strcmp(Tokens[i],"IMPRIME") == 0)
         return 0;
     if(strcmp(Tokens[i],"LEE") == 0)
+        return 0;
+    if(strcmp(Tokens[i],"FINPROG") == 0)
         return 0;
 
     return -1;
@@ -137,6 +141,7 @@ int CompLiteralNum(char Tokens[][256],unsigned int i)
         printf("Es invalida\n");
         return -1;
     }
+
     return 0;
 }
 int CompIdent(char Tokens[][256],unsigned int i)
@@ -148,44 +153,43 @@ int CompIdent(char Tokens[][256],unsigned int i)
 }
 void ClasificaTokens(char Tokens[][256], unsigned int i, char IDX[][256], char TXT[][256],char VALS[][256],char OPERAR[][256],char OPERREL[][256])
 {
-   
     if(CompPalabraReserv((Tokens),i) == 0)
     {
-        printf("Token %s en Token[%d] es palabra reservada\n",Tokens[i],i);
+        printf("Token %s en Token[%d] es palabra reservada\n\n",Tokens[i],i);
     }
     else
     {
         if(CompOperArit((Tokens),i) == 0)
         {
-            printf("Token %s en Token[%d] es operador aritmetico\n",Tokens[i],i);
+            printf("Token %s en Token[%d] es operador aritmetico\n\n",Tokens[i],i);
         }
         else
         {
             if(CompOperRel((Tokens),i) == 0)
             {
-                printf("Token %s en Token[%d] es operador relacional\n",Tokens[i],i);
+                printf("Token %s en Token[%d] es operador relacional\n\n",Tokens[i],i);
             }
             else
             {
                 if(CompAsig((Tokens),i) == 0)
                 {
-                    printf("Token %s en Token[%d] es operador de asignacion\n",Tokens[i],i);
+                    printf("Token %s en Token[%d] es operador de asignacion\n\n",Tokens[i],i);
                 }
                 else
                 {
                     if(CompLiteralNum((Tokens),i) == 0)
                     {
-                        printf("Token %s en Token[%d] es literal numerica\n",Tokens[i],i);
+                        printf("Token %s en Token[%d] es literal numerica\n\n",Tokens[i],i);
                     }
                     else
                     {
                         if(CompIdent((Tokens),i) == 0)
                         {
-                            printf("Token %s en Token[%d] es identificador\n",Tokens[i],i);
+                            printf("Token %s en Token[%d] es identificador\n\n",Tokens[i],i);
                         }
                         else
                         {
-                            printf("No es una token valido\n");
+                            printf("No es una token valido\n\n");
                         }
                     }
                 }
@@ -196,15 +200,12 @@ void ClasificaTokens(char Tokens[][256], unsigned int i, char IDX[][256], char T
 
 int main(int argc, char **argv)
 {
-    char Tokens[40][256];
-    char IDX[50][256];
-    char TXT[50][256];
-    char VALS[50][256];
-    char OPERAR[50][256];
-    char OPERREL[50][256];
-
-    //unsigned int r = 50, c = 100;
-    //initArregloChar2D(&Tokens,r,c);
+    char Tokens[40][256] = {0};
+    char IDX[50][256] = {0};
+    char TXT[50][256] = {0};
+    char VALS[50][256] = {0};
+    char OPERAR[50][256] = {0};
+    char OPERREL[50][256] = {0};
 
 	if (argc>1)
     {
@@ -216,22 +217,34 @@ int main(int argc, char **argv)
       fprintf(stderr, "Error: Se tiene que pasar como argumento el archivo que contiene la base de datos\n");
       exit(1);
     }
-
-    //imprimeArregloC2D(Tokens);
     int i=0;
-    printf("Inicia la comparacion \n");
+    printf("Inicia la comparacion \n\n");
 
+    for(int i = 0; i<MAXT;i++)
+    {
+        if(Tokens[i][0] == '"')
+        {
+            if(isspace(Tokens[i][strlen(Tokens[i])]!= 0))
+                Tokens[i][strlen(Tokens[i])] = '\0';
+        }
+        else
+            for(int j=0; j < strlen(Tokens[i]);j++)
+            {
+                if(isspace(Tokens[i][j])!=0)
+                    Tokens[i][j] = '\0';
+            }
+    }
 
-   while(Tokens[i] != NULL)
-   {
-       ClasificaTokens(Tokens, i, IDX, TXT, VALS, OPERAR, OPERREL);
-       i++;
-   }
-    
-    
+    for (int i=0;i < MAXT;i++)
+    {
+        printf("El token en Tokens[%d] es %s\n",i,Tokens[i]);
+        printf("La longitud de Tokens[%d] es %ld\n\n",i,strlen(Tokens[i]));
+    }
 
-    //liberaArregloChar2D(&Tokens);
-    printf("Este es el arreglo despues de liberarlo:\n");
-    //imprimeArregloC2D(Tokens);
+     while(i<MAXT)
+    {
+        ClasificaTokens(Tokens, i, IDX, TXT, VALS, OPERAR, OPERREL);
+        i++;
+    }
     return 0;
 }
