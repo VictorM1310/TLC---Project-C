@@ -163,69 +163,98 @@ int CompIdent(char Tokens[][256],unsigned int i)
 
     return -1;
 }
-void ClasificaTokens(char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT)
+int BuscaIndice(int i, char Tokens[][256], arregloChar2D *IDX)
 {
-    printf("i dentro de la clasificacion vale: %d\n",i);
-    printf("Token[%d] vale %s\n\n",i,Tokens[i]);
-    printf("La longitud de la cadena es: %ld\n",strlen(Tokens[i]));
+    int k=0;
+    while(k<=CIDX)
+    {
+        if (strncmp(IDX->A[k],IDX->A[i],strlen(IDX->A[i])) == 0)
+        {
+            return k+1;
+        }
+        k++;
+    }
+    return -1;
+}
+void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT)
+{
     if(CompPalabraReserv((Tokens),i) == 0)
     {
-        printf("Token %s en Token[%d] es palabra reservada\n\n",Tokens[i],i);
         strncpy(PR->A[CPR], Tokens[i],strlen(Tokens[i]));
         CPR++;
+        fprintf(ArchivoLex,"%s\n",Tokens[i]);
     }
     else
     {
         if(CompOperArit((Tokens),i) == 0)
         {
-            printf("Token %s en Token[%d] es operador aritmetico\n\n",Tokens[i],i);
             strncpy(OAR->A[COAR], Tokens[i],strlen(Tokens[i]));
             COAR++;
+            fprintf(ArchivoLex,"[op_ar]\n");
         }
         else
         {
             if(CompOperRel((Tokens),i) == 0)
             {
-                printf("Token %s en Token[%d] es operador relacional\n\n",Tokens[i],i);
                 strncpy(OR->A[COR], Tokens[i],strlen(Tokens[i]));
                 COR++;
+                fprintf(ArchivoLex,"[op_r]\n");
             }
             else
             {
                 if(CompAsig((Tokens),i) == 0)
                 {
-                    printf("Token %s en Token[%d] es operador de asignacion\n\n",Tokens[i],i);
                     strncpy(ASG->A[CASG], Tokens[i],strlen(Tokens[i]));
                     CASG++;
+                    fprintf(ArchivoLex,"=\n");
                 }
                 else
                 {
                     if(CompLiteralNum((Tokens),i) == 0)
                     {
-                        printf("Token %s en Token[%d] es literal numerica\n\n",Tokens[i],i);
                         strncpy(LN->A[CLN], Tokens[i],strlen(Tokens[i]));
                         CLN++;
+                        fprintf(ArchivoLex,"[val]\n");
                     }
                     else
                     {
                         if(CompIdent((Tokens),i) == 0)
                         {
-                            printf("Token %s en Token[%d] es identificador\n\n",Tokens[i],i);
-                            strncpy(IDX->A[CIDX], Tokens[i],strlen(Tokens[i]));
+                            const char *ET = "[id]";
+                            const char *ID1 = "ID0";
+                            const char *ID2 = "ID";
+                            strncpy(IDX->A[CIDX],Tokens[i],strlen(Tokens[i]));
+                            int Valor = 0;
+                            Valor = BuscaIndice(CIDX,Tokens,IDX);
+
+                            if(Valor>0 && Valor<9)
+                                fprintf(ArchivoLex,"%s%s%d\n",ET,ID1,Valor);
+                            else
+                            {
+                               if(Valor>9)
+                                    fprintf(ArchivoLex,"%s%s%d\n",ET,ID2,Valor);
+                            }
                             CIDX++;
+
                         }
                         else
                         {
                             if(Tokens[i][0]=='"')
                             {
+                                const char *ETQ = "[txt]";
+                                const char *TX1 = "TX0";
+                                const char *TX2 = "TX";
                                 strncpy(TXT->A[CTXT], Tokens[i],strlen(Tokens[i]));
+                                if(CTXT<9)
+                                    fprintf(ArchivoLex,"%s%s%d\n",ETQ,TX1,CTXT+1);
+                                else
+                                    fprintf(ArchivoLex,"%s%s%d\n",ETQ,TX2,CTXT+1);
                                 CTXT++;
                             }
                             else
                             {
-                                printf("No es una token valido\n\n");
+                                //Meter a una matriz de errores printf("No es una token valido\n\n");
                             }
-
                         }
                     }
                 }
@@ -233,9 +262,48 @@ void ClasificaTokens(char Tokens[][256], unsigned int i, arregloChar2D *PR, arre
         }
     }
 }
+void ImprimeSim(FILE *ArchivoSim,int CIDXNR,arregloChar2D *IDXNR,arregloChar2D *LN, arregloChar2D *TXT)
+{
+    const char *ID1 = "ID0";
+    const char *ID2 = "ID";
+    const char *TX1 = "TX0";
+    const char *TX2 = "TX";
 
+    fprintf(ArchivoSim,"IDS\n");
+    for(int i = 0; i<CIDXNR;i++)
+    {
+        if(i<9)
+            fprintf(ArchivoSim,"%s,%s%d\n",IDXNR->A[i],ID1,i+1);
+        else
+        {
+            if(i>9)
+                fprintf(ArchivoSim,"%s,%s%d\n",IDXNR->A[i],ID2,i+1);
+        }
+    }
+    fprintf(ArchivoSim,"\n");
+
+    fprintf(ArchivoSim,"TXT\n");
+    for(int i = 0; i<CTXT;i++)
+    {
+        if(i<9)
+            fprintf(ArchivoSim,"%s,%s%d\n",TXT->A[i],TX1,i+1);
+        else
+            fprintf(ArchivoSim,"%s,%s%d\n",TXT->A[i],TX2,i+1);
+
+    }
+    fprintf(ArchivoSim,"\n");
+
+    fprintf(ArchivoSim,"VAL\n");
+    for(int i = 0; i<CLN;i++)
+    {
+        fprintf(ArchivoSim,"%s\n",LN->A[i]);
+    }
+    fprintf(ArchivoSim,"\n");
+}
 int main(int argc, char **argv)
 {
+    FILE *ArchivoLex;
+    FILE *ArchivoSim;
     char Tokens[60][256];
     int r = 50, c = 256;
     arregloChar2D PR;
@@ -245,6 +313,7 @@ int main(int argc, char **argv)
     arregloChar2D LN;
     arregloChar2D IDX;
     arregloChar2D TXT;
+    arregloChar2D IDXNR;
 
     initArregloChar2D(&PR,r,c);
     initArregloChar2D(&OAR,r,c);
@@ -253,6 +322,7 @@ int main(int argc, char **argv)
     initArregloChar2D(&LN,r,c);
     initArregloChar2D(&IDX,r,c);
     initArregloChar2D(&TXT,r,c);
+    initArregloChar2D(&IDXNR,r,c);
 
 	if (argc>1)
     {
@@ -272,15 +342,16 @@ int main(int argc, char **argv)
         printf("El token en Tokens[%d] es %s\n",i,Tokens[i]);
         printf("La longitud de Tokens[%d] es %ld\n\n",i,strlen(Tokens[i]));
     }
-    FILE *ArchivoLex;
+
     int i=0;
+    ArchivoLex = fopen("Archivo.lex","w");
     while(i<MAXT)
     {
-        printf("i vale: %d\n",i);
-        printf("El token que se clasificara sera %s\n",Tokens[i]);
-        ClasificaTokens(Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT);
+        ClasificaTokens(ArchivoLex,Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT);
         i++;
     }
+    fclose(ArchivoLex);
+    printf("\n\n");
     printf("Arreglo PR\n");
     for (int i; i < CPR;i++)
     {
@@ -328,8 +399,33 @@ int main(int argc, char **argv)
     {
         printf("En TXT[%d] esta: %s\n",i,TXT.A[i]);
     }
+    printf("\n\n");
+    int TokenRep = 0;
+    int CIDXNR=0;
 
-    printf("La longitud de TXT[%d] con contenido %s es: %ld\n",24,TXT.A[0],strlen(TXT.A[0]));
+    for (int i = 0; i < CIDX; i++)
+    {
+        TokenRep = 0;
+        for(int j = 0; j<CIDXNR; j++)
+            if (strncmp(IDXNR.A[j],IDX.A[i],strlen(IDX.A[i])) == 0)
+                TokenRep=1;
+        if(TokenRep==0)
+        {
+            strncpy(IDXNR.A[CIDXNR],IDX.A[i],strlen(IDX.A[i]));
+            CIDXNR++;
+        }
+    }
+
+    printf("Arreglo IDXNR\n");
+    for (int i; i < CIDXNR;i++)
+    {
+        printf("En IDXNR[%d] esta: %s\n",i,IDXNR.A[i]);
+    }
+
+    printf("\n\n");
+    ArchivoSim = fopen("Archivo.sim","w");
+    ImprimeSim(ArchivoSim,CIDXNR,&IDXNR,&LN,&TXT);
+    fclose(ArchivoSim);
 
     liberaArregloChar2D(&PR);
     liberaArregloChar2D(&OAR);
@@ -338,6 +434,6 @@ int main(int argc, char **argv)
     liberaArregloChar2D(&LN);
     liberaArregloChar2D(&IDX);
     liberaArregloChar2D(&TXT);
-
+    liberaArregloChar2D(&IDXNR);
     return 0;
 }
