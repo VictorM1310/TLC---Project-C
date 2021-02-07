@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "ArregloTokens.h"
 int MAXT=0;
+int CPR = 0;
 int CargaTokens(char *nomArchivo, char Tokens[][256])
 {
     FILE *arch;
@@ -35,7 +36,9 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                             s = strtok_r(NULL, " \t\n", &ptr);
                             strcat(arrayTemp,s);
                         }while(s[0]!='"');
+                        arrayTemp[strlen(arrayTemp)-1]='\0';
                         strncpy (Tokens[i], arrayTemp, 255);
+
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         printf("La longitud de la cadena es: %ld\n",strlen(arrayTemp));
                         Tokens[i][strlen(arrayTemp)-1]='\0';
@@ -44,9 +47,11 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                     }
                     else
                     {
+                        if(isspace(s[strlen(s)-1])!=0)
+                            s[strlen(s)-1] = '\0';
+
                         strncpy (Tokens[i], s, 255);
                         printf("La longitud de la cadena es: %ld\n",strlen(s));
-                        Tokens[i][strlen(s)] = '\0';
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         s = strtok_r(NULL, " \t\n", &ptr);
                         i++;
@@ -59,7 +64,7 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
 
         }
         printf("i vale: %d\n",i);
-        MAXT=i;
+        MAXT = i;
 	}
 	return 0;
 }
@@ -151,11 +156,16 @@ int CompIdent(char Tokens[][256],unsigned int i)
 
     return -1;
 }
-void ClasificaTokens(char Tokens[][256], unsigned int i, char IDX[][256], char TXT[][256],char VALS[][256],char OPERAR[][256],char OPERREL[][256])
+void ClasificaTokens(char Tokens[][256], unsigned int i, arregloChar2D *aC)
 {
+    printf("i dentro de la clasificacion vale: %d\n",i);
+    printf("Token[%d] vale %s\n\n",i,Tokens[i]);
+    printf("La longitud de la cadena es: %ld\n",strlen(Tokens[i]));
     if(CompPalabraReserv((Tokens),i) == 0)
     {
         printf("Token %s en Token[%d] es palabra reservada\n\n",Tokens[i],i);
+        strncpy(aC->A[CPR], Tokens[i],strlen(Tokens[i]));
+        CPR++;
     }
     else
     {
@@ -200,13 +210,10 @@ void ClasificaTokens(char Tokens[][256], unsigned int i, char IDX[][256], char T
 
 int main(int argc, char **argv)
 {
-    char Tokens[40][256] = {0};
-    char IDX[50][256] = {0};
-    char TXT[50][256] = {0};
-    char VALS[50][256] = {0};
-    char OPERAR[50][256] = {0};
-    char OPERREL[50][256] = {0};
-
+    char Tokens[60][256];
+    int r = 50, c = 256;
+    arregloChar2D PR;
+    initArregloChar2D(&PR,r,c);
 	if (argc>1)
     {
       if (CargaTokens(argv[1], Tokens) < 0)
@@ -217,34 +224,27 @@ int main(int argc, char **argv)
       fprintf(stderr, "Error: Se tiene que pasar como argumento el archivo que contiene la base de datos\n");
       exit(1);
     }
-    int i=0;
+
     printf("Inicia la comparacion \n\n");
 
-    for(int i = 0; i<MAXT;i++)
-    {
-        if(Tokens[i][0] == '"')
-        {
-            if(isspace(Tokens[i][strlen(Tokens[i])]!= 0))
-                Tokens[i][strlen(Tokens[i])] = '\0';
-        }
-        else
-            for(int j=0; j < strlen(Tokens[i]);j++)
-            {
-                if(isspace(Tokens[i][j])!=0)
-                    Tokens[i][j] = '\0';
-            }
-    }
-
-    for (int i=0;i < MAXT;i++)
+    for (int i=0;i <MAXT;i++)
     {
         printf("El token en Tokens[%d] es %s\n",i,Tokens[i]);
         printf("La longitud de Tokens[%d] es %ld\n\n",i,strlen(Tokens[i]));
     }
-
-     while(i<MAXT)
+    FILE *ArchivoLex;
+    int i=0;
+    while(i<MAXT)
     {
-        ClasificaTokens(Tokens, i, IDX, TXT, VALS, OPERAR, OPERREL);
+        printf("i vale: %d\n",i);
+        printf("El token que se clasificara sera %s\n",Tokens[i]);
+        ClasificaTokens(Tokens, i,&PR);
         i++;
+    }
+    printf("Hora de imprimir PR\n");
+    for (int i; i < CPR;i++)
+    {
+        printf("En PR[%d] esta: %s\n",i,PR.A[i]);
     }
     return 0;
 }
