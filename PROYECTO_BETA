@@ -42,7 +42,7 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                             s = strtok_r(NULL, " \t\n", &ptr);
                             strcat(arrayTemp,s);
                         }while(s[0]!='"');
-                        arrayTemp[strlen(arrayTemp)-1]='\0';
+                        arrayTemp[strlen(arrayTemp)]='\0';
                         strncpy (Tokens[i], arrayTemp, 255);
 
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
