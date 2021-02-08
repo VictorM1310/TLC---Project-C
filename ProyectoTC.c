@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 #include "ArregloTokens.h"
 int MAXT=0;
 int CPR = 0;
@@ -176,6 +177,21 @@ int BuscaIndice(int i, char Tokens[][256], arregloChar2D *IDX)
     }
     return -1;
 }
+
+int octalTOdecimal(arregloChar2D *LN, unsigned int i)
+{
+    int decimal = 0;
+    int num = 0;
+    int k = strlen(LN->A[i]);
+    for(int j = 0; j < strlen(LN->A[i]); j++)
+    {   
+        num = LN->A[i][j] - '0';
+        decimal = decimal + (num * pow(8,k-1));
+        k--;
+    }
+    return decimal;
+}
+
 void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT)
 {
     if(CompPalabraReserv((Tokens),i) == 0)
@@ -296,7 +312,7 @@ void ImprimeSim(FILE *ArchivoSim,int CIDXNR,arregloChar2D *IDXNR,arregloChar2D *
     fprintf(ArchivoSim,"VAL\n");
     for(int i = 0; i<CLN;i++)
     {
-        fprintf(ArchivoSim,"%s\n",LN->A[i]);
+        fprintf(ArchivoSim,"%s,%d\n",LN->A[i],octalTOdecimal(LN,i));
     }
     fprintf(ArchivoSim,"\n");
 }
