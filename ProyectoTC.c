@@ -33,7 +33,7 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                     {
                         break;
                     }
-                    if(s[0]=='"')
+                    if(*s=='"')
                     {
                         char arrayTemp[256];
                         memset(arrayTemp,0,256);
@@ -42,8 +42,13 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                         {
                             strcat(arrayTemp, " ");
                             s = strtok_r(NULL, " \t\n", &ptr);
+                            if(!s)
+                            {
+                                printf("Esto es un error\n");
+                                break;
+                            }
                             strcat(arrayTemp,s);
-                        }while(s[0]!='"');
+                        }while(*s!='"');
                         arrayTemp[strlen(arrayTemp)-1]='\0';
                         strncpy (Tokens[i], arrayTemp, 255);
 
