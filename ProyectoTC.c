@@ -12,8 +12,9 @@ int CASG = 0;
 int CLN = 0;
 int CIDX = 0;
 int CTXT = 0;
+int CER = 0;
 
-int CargaTokens(char *nomArchivo, char Tokens[][256])
+int CargaTokens(char *nomArchivo, char Tokens[][256],arregloInt2D *aI)
 {
     FILE *arch;
     arch = fopen (nomArchivo, "r");
@@ -21,7 +22,7 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
     int i=0;
 	if (arch != NULL)
 	{
-
+        int NumLinea = 1;
 		while(fgets(linea, 255, arch)!=NULL)
         {
             char *s, *ptr;
@@ -29,11 +30,12 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
             if (s[0])
             {
                 do
-                {   if (linea[0] == '#')
+                {
+                    if (linea[0] == '#')
                     {
                         break;
                     }
-                    if(*s=='"')
+                    if(s[0]=='"')
                     {
                         char arrayTemp[256];
                         memset(arrayTemp,0,256);
@@ -44,39 +46,40 @@ int CargaTokens(char *nomArchivo, char Tokens[][256])
                             s = strtok_r(NULL, " \t\n", &ptr);
                             if(!s)
                             {
-                                printf("Esto es un error\n");
                                 break;
                             }
                             strcat(arrayTemp,s);
                         }while(*s!='"');
                         arrayTemp[strlen(arrayTemp)-1]='\0';
+                        if(isspace(arrayTemp[strlen(arrayTemp)-1])!= 0)
+                            arrayTemp[strlen(arrayTemp)-1]='\0';
                         strncpy (Tokens[i], arrayTemp, 255);
-
+                        aI->B[i][1] = NumLinea;
+                        aI->B[i][0] = i;
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         printf("La longitud de la cadena es: %ld\n",strlen(arrayTemp));
                         Tokens[i][strlen(arrayTemp)]='\0';
-                        i++;
                         s=NULL;
                     }
                     else
                     {
                         if(isspace(s[strlen(s)-1])!=0)
                             s[strlen(s)-1] = '\0';
-
                         strncpy (Tokens[i], s, 255);
+                        aI->B[i][1] = NumLinea;
+                        aI->B[i][0] = i;
                         printf("La longitud de la cadena es: %ld\n",strlen(s));
                         printf("Esta es la posicion %d: %s\n",i,Tokens[i]);
                         s = strtok_r(NULL, " \t\n", &ptr);
-                        i++;
                     }
+                    i++;
                 } while (s != NULL);
                 printf("\n");
             }
             else
                 printf("No hay token que leer\n");
-
+            NumLinea++;
         }
-        printf("i vale: %d\n",i);
         MAXT = i;
 	}
 	return 0;
@@ -142,7 +145,7 @@ int CompAsig(char Tokens[][256],unsigned int i)
     return -1;
 }
 
-int CompLiteralNum(char Tokens[][256],unsigned int i)
+int CompLiteralNum(char Tokens[][256],unsigned int i, arregloInt2D *aI)
 {
     unsigned int tama = 0;
     unsigned int DigitoInvalido = 0;
@@ -156,17 +159,58 @@ int CompLiteralNum(char Tokens[][256],unsigned int i)
     }
     if(DigitoInvalido == 1)
     {
-        printf("Es invalida\n");
+        int Error = 0;
+        int Ubi = 0;
+        for (int k = 0; k < MAXT; k++)
+        {
+            if (strncmp(Tokens[i],Tokens[k],strlen(Tokens[i])) == 0)
+            {
+                Ubi = k;
+                break;
+            }
+        }
+        for(int j = 0; j<MAXT; j++)
+        {
+            if (aI->B[j][0] == Ubi)
+            {
+                Error = aI->B[j][1];
+                break;
+            }
+        }
+        printf("Error: notacion decimal no permitida en token (%s) en la linea %d\n",Tokens[i],Error);
+
         return -1;
     }
 
     return 0;
 }
-int CompIdent(char Tokens[][256],unsigned int i)
+int CompIdent(char Tokens[][256],unsigned int i, arregloChar2D *aC,arregloInt2D *MTokLin)
 {
+    if(((Tokens[i][0] != '"') && (Tokens[i][strlen(Tokens[i])-1] == '"'))||((Tokens[i][0] == '"') && (Tokens[i][strlen(Tokens[i])-1] != '"')))
+    {
+        int Error = 0;
+        int Ubi = 0;
+        for (int k = 0; k < MAXT; k++)
+        {
+            if (strncmp(Tokens[i],Tokens[k],strlen(Tokens[k])) == 0)
+            {
+                Ubi = k;
+                break;
+            }
+        }
+        for(int j = 0; j<MAXT; j++)
+        {
+            if (MTokLin->B[j][0] == Ubi)
+            {
+                Error = MTokLin->B[j][1];
+                break;
+            }
+        }
+        printf("Error: faltan comillas de terminacion en el token (%s) ubicado en la linea %d\n",Tokens[i],Error);
+    }
+
     if((isdigit(Tokens[i][0]) == 0)&&(isalpha(Tokens[i][0])!=0))
         return 0;
-
     return -1;
 }
 int BuscaIndice(int i, char Tokens[][256], arregloChar2D *IDX)
@@ -189,7 +233,7 @@ int octalTOdecimal(arregloChar2D *LN, unsigned int i)
     int num = 0;
     int k = strlen(LN->A[i]);
     for(int j = 0; j < strlen(LN->A[i]); j++)
-    {   
+    {
         num = LN->A[i][j] - '0';
         decimal = decimal + (num * pow(8,k-1));
         k--;
@@ -197,7 +241,7 @@ int octalTOdecimal(arregloChar2D *LN, unsigned int i)
     return decimal;
 }
 
-void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT)
+void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT,arregloChar2D *Errores, arregloInt2D *MTokLin)
 {
     if(CompPalabraReserv((Tokens),i) == 0)
     {
@@ -231,7 +275,7 @@ void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arreg
                 }
                 else
                 {
-                    if(CompLiteralNum((Tokens),i) == 0)
+                    if(CompLiteralNum((Tokens),i,MTokLin) == 0)
                     {
                         strncpy(LN->A[CLN], Tokens[i],strlen(Tokens[i]));
                         CLN++;
@@ -239,28 +283,39 @@ void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arreg
                     }
                     else
                     {
-                        if(CompIdent((Tokens),i) == 0)
+                        if(CompIdent((Tokens),i,Errores,MTokLin) == 0)
                         {
                             const char *ET = "[id]";
                             const char *ID1 = "ID0";
                             const char *ID2 = "ID";
-                            strncpy(IDX->A[CIDX],Tokens[i],strlen(Tokens[i]));
-                            int Valor = 0;
-                            Valor = BuscaIndice(CIDX,Tokens,IDX);
-
-                            if(Valor>0 && Valor<9)
-                                fprintf(ArchivoLex,"%s%s%d\n",ET,ID1,Valor);
-                            else
+                            if(Tokens[i][strlen(Tokens[i])-1]!='"')
                             {
-                               if(Valor>9)
-                                    fprintf(ArchivoLex,"%s%s%d\n",ET,ID2,Valor);
-                            }
-                            CIDX++;
+                                if(strlen(Tokens[i])>16)
+                                {
+                                    printf("Advertencia: su identificador %s es mayor a 16 caracteres, solo se tomaran en cuenta los primeros 16\n",Tokens[i]);
+                                    strncpy(IDX->A[CIDX],Tokens[i],16);
 
+                                }
+                                else
+                                {
+                                    strncpy(IDX->A[CIDX],Tokens[i],strlen(Tokens[i]));
+                                }
+                                int Valor = 0;
+                                Valor = BuscaIndice(CIDX,Tokens,IDX);
+
+                                if(Valor>0 && Valor<9)
+                                    fprintf(ArchivoLex,"%s%s%d\n",ET,ID1,Valor);
+                                else
+                                {
+                                    if(Valor>9)
+                                        fprintf(ArchivoLex,"%s%s%d\n",ET,ID2,Valor);
+                                }
+                                CIDX++;
+                            }
                         }
                         else
                         {
-                            if(Tokens[i][0]=='"')
+                            if((Tokens[i][0]=='"') && (Tokens[i][strlen(Tokens[i])-1]=='"'))
                             {
                                 const char *ETQ = "[txt]";
                                 const char *TX1 = "TX0";
@@ -274,7 +329,20 @@ void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arreg
                             }
                             else
                             {
-                                //Meter a una matriz de errores printf("No es una token valido\n\n");
+                                if(Tokens[i][0]!='"')
+                                {
+                                    int NoImp=0;
+                                    for(int x=0; x<strlen(Tokens[i]);x++)
+                                        if(Tokens[i][x]=='8'||Tokens[i][x]=='9')
+                                        {
+                                            NoImp=-1;
+                                        }
+                                    if(NoImp==0)
+                                    {
+                                        strncpy(Errores->A[CER],Tokens[i],strlen(Tokens[i]));
+                                        CER++;
+                                    }
+                                }
                             }
                         }
                     }
@@ -321,12 +389,38 @@ void ImprimeSim(FILE *ArchivoSim,int CIDXNR,arregloChar2D *IDXNR,arregloChar2D *
     }
     fprintf(ArchivoSim,"\n");
 }
+
+int BuscaErroLinea(int i, arregloInt2D *aI, char Tokens[][256], arregloChar2D *aC)
+{
+    int ErrorLinea = 0;
+    int Ubicacion = 0;
+    for (int k = 0; k < MAXT; k++)
+    {
+        if (strncmp(aC->A[i],Tokens[k],strlen(aC->A[i])) == 0)
+        {
+            Ubicacion = k;
+            break;
+        }
+    }
+    for(int j = 0; j<MAXT; j++)
+    {
+        if (aI->B[j][0] == Ubicacion)
+        {
+            ErrorLinea = aI->B[j][1];
+            break;
+        }
+    }
+    return ErrorLinea;
+}
+
 int main(int argc, char **argv)
 {
     FILE *ArchivoLex;
     FILE *ArchivoSim;
     char Tokens[60][256];
     int r = 50, c = 256;
+    int r1 = 50, c1 = 2;
+
     arregloChar2D PR;
     arregloChar2D OAR;
     arregloChar2D OR;
@@ -335,6 +429,8 @@ int main(int argc, char **argv)
     arregloChar2D IDX;
     arregloChar2D TXT;
     arregloChar2D IDXNR;
+    arregloChar2D Errores;
+    arregloInt2D MTokLin;
 
     initArregloChar2D(&PR,r,c);
     initArregloChar2D(&OAR,r,c);
@@ -344,10 +440,12 @@ int main(int argc, char **argv)
     initArregloChar2D(&IDX,r,c);
     initArregloChar2D(&TXT,r,c);
     initArregloChar2D(&IDXNR,r,c);
+    initArregloInt2D(&MTokLin,r1,c1);
+    initArregloChar2D(&Errores,r,c);
 
 	if (argc>1)
     {
-      if (CargaTokens(argv[1], Tokens) < 0)
+      if (CargaTokens(argv[1], Tokens,&MTokLin) < 0)
          exit(1);
     }
     else
@@ -365,10 +463,11 @@ int main(int argc, char **argv)
     }
 
     int i=0;
+
     ArchivoLex = fopen("Archivo.lex","w");
     while(i<MAXT)
     {
-        ClasificaTokens(ArchivoLex,Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT);
+        ClasificaTokens(ArchivoLex,Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT,&Errores,&MTokLin);
         i++;
     }
     fclose(ArchivoLex);
@@ -423,7 +522,7 @@ int main(int argc, char **argv)
     printf("\n\n");
     int TokenRep = 0;
     int CIDXNR=0;
-
+//for que elimina los IDX repetidos para su impresion en el .lex
     for (int i = 0; i < CIDX; i++)
     {
         TokenRep = 0;
@@ -448,6 +547,17 @@ int main(int argc, char **argv)
     ImprimeSim(ArchivoSim,CIDXNR,&IDXNR,&LN,&TXT);
     fclose(ArchivoSim);
 
+    printf("Matriz de errores con la forma indice/linea\n");
+    for (int i; i < MAXT;i++)
+    {
+        printf("%d %d\n",MTokLin.B[i][0],MTokLin.B[i][1]);
+    }
+
+    for (int i; i < CER;i++)
+    {
+        printf("Error: el token %s no es una variable alfanumerica, en la linea %d\n",Errores.A[i],BuscaErroLinea(i,&MTokLin,Tokens,&Errores));
+    }
+
     liberaArregloChar2D(&PR);
     liberaArregloChar2D(&OAR);
     liberaArregloChar2D(&OR);
@@ -456,5 +566,8 @@ int main(int argc, char **argv)
     liberaArregloChar2D(&IDX);
     liberaArregloChar2D(&TXT);
     liberaArregloChar2D(&IDXNR);
+    liberaArregloInt2D(&MTokLin);
+    liberaArregloChar2D(&Errores);
     return 0;
 }
+
