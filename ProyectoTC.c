@@ -4,13 +4,16 @@
 #include <ctype.h>
 #include <math.h>
 #include "ArregloTokens.h"
+
 int MAXT=0;
+int MAXTL = 0;
 int CPR = 0;
 int COAR = 0;
 int COR = 0;
 int CASG = 0;
 int CLN = 0;
 int CIDX = 0;
+int CIDXNR = 0;
 int CTXT = 0;
 int CER = 0;
 
@@ -213,18 +216,35 @@ int CompIdent(char Tokens[][256],unsigned int i, arregloChar2D *aC,arregloInt2D 
         return 0;
     return -1;
 }
-int BuscaIndice(int i, char Tokens[][256], arregloChar2D *IDX)
+int BuscaIndice(int i, char Tokens[][256], arregloChar2D *IDXNR)
 {
-    int k=0;
-    while(k<=CIDX)
+    int TokenRep = 0;
+    int IndiceNR = 0;
+    if(IDXNR)
     {
-        if (strncmp(IDX->A[k],IDX->A[i],strlen(IDX->A[i])) == 0)
+        TokenRep = 0;
+        for(int j = 0; j<CIDXNR; j++)
         {
-            return k+1;
+            if (strncmp(IDXNR->A[j],Tokens[i],strlen(IDXNR->A[j])) == 0)
+            {
+                TokenRep=1;
+                IndiceNR = j+1;
+            }
         }
-        k++;
+        if(TokenRep==0)
+        {
+            strncpy(IDXNR->A[CIDXNR],Tokens[i],16);
+            IndiceNR = CIDXNR+1;
+            CIDXNR++;
+        }
     }
-    return -1;
+    else
+    {
+        strncpy(IDXNR->A[CIDXNR],Tokens[i],16);
+        CIDXNR++;
+        return 1;
+    }
+    return IndiceNR;
 }
 
 int octalTOdecimal(arregloChar2D *LN, unsigned int i)
@@ -241,7 +261,7 @@ int octalTOdecimal(arregloChar2D *LN, unsigned int i)
     return decimal;
 }
 
-void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT,arregloChar2D *Errores, arregloInt2D *MTokLin)
+void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arregloChar2D *PR, arregloChar2D *OAR, arregloChar2D *OR,arregloChar2D *ASG, arregloChar2D *LN, arregloChar2D *IDX, arregloChar2D *TXT,arregloChar2D *Errores, arregloInt2D *MTokLin,arregloChar2D *IDXNR)
 {
     if(CompPalabraReserv((Tokens),i) == 0)
     {
@@ -301,9 +321,9 @@ void ClasificaTokens(FILE *ArchivoLex, char Tokens[][256], unsigned int i, arreg
                                     strncpy(IDX->A[CIDX],Tokens[i],strlen(Tokens[i]));
                                 }
                                 int Valor = 0;
-                                Valor = BuscaIndice(CIDX,Tokens,IDX);
+                                Valor = BuscaIndice(i,Tokens,IDXNR);
 
-                                if(Valor>0 && Valor<9)
+                                if(Valor>0 && Valor<=9)
                                     fprintf(ArchivoLex,"%s%s%d\n",ET,ID1,Valor);
                                 else
                                 {
@@ -365,7 +385,7 @@ void ImprimeSim(FILE *ArchivoSim,int CIDXNR,arregloChar2D *IDXNR,arregloChar2D *
             fprintf(ArchivoSim,"%s,%s%d\n",IDXNR->A[i],ID1,i+1);
         else
         {
-            if(i>9)
+            if(i>=9)
                 fprintf(ArchivoSim,"%s,%s%d\n",IDXNR->A[i],ID2,i+1);
         }
     }
@@ -412,14 +432,110 @@ int BuscaErroLinea(int i, arregloInt2D *aI, char Tokens[][256], arregloChar2D *a
     }
     return ErrorLinea;
 }
+int CargaTokensLex(char *nomArchivo, arregloChar2D *TokensLex)
+{
+    FILE *arch;
+    arch = fopen (nomArchivo, "r");
+	char linea[256];
+    int i=0;
+	if (arch != NULL)
+	{
+		while(fgets(linea, 255, arch)!=NULL)
+        {
+            char *s, *ptr;
+            s = strtok_r(linea, " \t\n", &ptr);
+            if (s[0])
+            {
+                do
+                {
+                    if(isspace(s[strlen(s)-1])!=0)
+                        s[strlen(s)-1] = '\0';
+                    strncpy (TokensLex->A[i], s, 255);
+                    printf("La longitud de la cadena es: %ld\n",strlen(s));
+                    printf("Esta es la posicion %d: %s\n",i,TokensLex->A[i]);
+                    s = strtok_r(NULL, " \t\n", &ptr);
+                    i++;
+                } while (s != NULL);
+                printf("\n");
+            }
+            else
+                printf("No hay token que leer\n");
 
+        }
+	}
+	MAXTL = i;
+	return 0;
+}
+
+void BuscaProgFP(arregloChar2D *TokensLex,arregloInt2D *MTokLin)
+{
+    int ErrorP = 0;
+    int NProg = 0;
+    for(int i=0;i<MAXTL;i++)
+    {
+        if(strcmp(TokensLex->A[i],"PROGRAMA")==0)
+        {
+            NProg++;
+            if(i !=0)
+            {
+                int ErrorLinea = 0;
+                int Ubicacion = i;
+                for(int j = 0; j<MAXT; j++)
+                {
+                    if (MTokLin->B[j][0] == Ubicacion)
+                    {
+                        ErrorLinea = MTokLin->B[j][1];
+                    }
+                }
+                printf("Error: Ubicacion de la palabra reservada (PROGRAMA) incorrecta en la linea %d\n",ErrorLinea);
+
+                if(NProg>1)
+                    printf("Error: Multiples definiciones de la palabra reservada (PROGRAMA) en la linea %d\n",ErrorLinea);
+            }
+            else
+                ErrorP = 1;
+        }
+    }
+    if (ErrorP == 0)
+        printf("Error: No se encontro la palabra reservada (PROGRAMA) en la linea 1\n");
+
+    ErrorP = 0;
+    int NFProg = 0;
+    for(int i=0;i<MAXTL;i++)
+    {
+        if(strcmp(TokensLex->A[i],"FINPROG")==0)
+        {
+            NFProg++;
+            if(i != (MAXTL-1))
+            {
+                int ErrorLinea = 0;
+                int Ubicacion = i;
+                for(int j = 0; j<MAXT; j++)
+                {
+                    if (MTokLin->B[j][0] == Ubicacion)
+                    {
+                        ErrorLinea = MTokLin->B[j][1];
+                    }
+                }
+                printf("Error: Ubicacion de la palabra reservada (FINPROG) incorrecta en la linea %d\n",ErrorLinea);
+                if(NFProg>1)
+                    printf("Error: Multiples definiciones de la palabra reservada (FINPROG) en la linea %d\n",ErrorLinea);
+            }
+            else
+                ErrorP = 1;
+        }
+    }
+    if (ErrorP == 0)
+        printf("Error: No se encontro la palabra reservada (FINPROG) en la linea %d\n",MTokLin->B[MAXTL-1][1]);
+
+}
 int main(int argc, char **argv)
 {
     FILE *ArchivoLex;
     FILE *ArchivoSim;
-    char Tokens[60][256];
-    int r = 50, c = 256;
-    int r1 = 50, c1 = 2;
+    char Tokens[100][256];
+    int r = 100, c = 256;
+    int r1 = 100, c1 = 2;
 
     arregloChar2D PR;
     arregloChar2D OAR;
@@ -467,7 +583,7 @@ int main(int argc, char **argv)
     ArchivoLex = fopen("Archivo.lex","w");
     while(i<MAXT)
     {
-        ClasificaTokens(ArchivoLex,Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT,&Errores,&MTokLin);
+        ClasificaTokens(ArchivoLex,Tokens, i,&PR,&OAR,&OR,&ASG,&LN,&IDX,&TXT,&Errores,&MTokLin,&IDXNR);
         i++;
     }
     fclose(ArchivoLex);
@@ -520,21 +636,6 @@ int main(int argc, char **argv)
         printf("En TXT[%d] esta: %s\n",i,TXT.A[i]);
     }
     printf("\n\n");
-    int TokenRep = 0;
-    int CIDXNR=0;
-//for que elimina los IDX repetidos para su impresion en el .lex
-    for (int i = 0; i < CIDX; i++)
-    {
-        TokenRep = 0;
-        for(int j = 0; j<CIDXNR; j++)
-            if (strncmp(IDXNR.A[j],IDX.A[i],strlen(IDX.A[i])) == 0)
-                TokenRep=1;
-        if(TokenRep==0)
-        {
-            strncpy(IDXNR.A[CIDXNR],IDX.A[i],strlen(IDX.A[i]));
-            CIDXNR++;
-        }
-    }
 
     printf("Arreglo IDXNR\n");
     for (int i; i < CIDXNR;i++)
@@ -558,6 +659,21 @@ int main(int argc, char **argv)
         printf("Error: el token %s no es una variable alfanumerica, en la linea %d\n",Errores.A[i],BuscaErroLinea(i,&MTokLin,Tokens,&Errores));
     }
 
+
+    arregloChar2D TokensLex;
+    initArregloChar2D(&TokensLex,r,c);
+    CargaTokensLex("Archivo.lex", &TokensLex);
+
+    printf("\n\n");
+    for (int i; i < MAXTL; i++)
+    {
+        printf("En TokensLex[%d] esta: %s\n",i,TokensLex.A[i]);
+    }
+    printf("\n\n");
+    BuscaProgFP(&TokensLex,&MTokLin);
+
+
+
     liberaArregloChar2D(&PR);
     liberaArregloChar2D(&OAR);
     liberaArregloChar2D(&OR);
@@ -570,4 +686,3 @@ int main(int argc, char **argv)
     liberaArregloChar2D(&Errores);
     return 0;
 }
-
