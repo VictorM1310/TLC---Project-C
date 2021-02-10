@@ -16,6 +16,7 @@ int CIDX = 0;
 int CIDXNR = 0;
 int CTXT = 0;
 int CER = 0;
+int CIAS = 0;
 
 int CargaTokens(char *nomArchivo, char Tokens[][256],arregloInt2D *aI)
 {
@@ -467,6 +468,20 @@ int CargaTokensLex(char *nomArchivo, arregloChar2D *TokensLex)
 	return 0;
 }
 
+int IndiceLinea (int Ubicacion, arregloInt2D *MTokLin)
+{
+    int ErrorLinea = 0;
+    for(int j = 0; j<MAXT; j++)
+            {
+                if (MTokLin->B[j][0] == Ubicacion)
+                    {
+                        ErrorLinea = MTokLin->B[j][1];
+                        break;
+                    }
+            }
+    return ErrorLinea;
+}
+
 void BuscaProgFP(arregloChar2D *TokensLex,arregloInt2D *MTokLin)
 {
     int ErrorP = 0;
@@ -478,19 +493,11 @@ void BuscaProgFP(arregloChar2D *TokensLex,arregloInt2D *MTokLin)
             NProg++;
             if(i !=0)
             {
-                int ErrorLinea = 0;
                 int Ubicacion = i;
-                for(int j = 0; j<MAXT; j++)
-                {
-                    if (MTokLin->B[j][0] == Ubicacion)
-                    {
-                        ErrorLinea = MTokLin->B[j][1];
-                    }
-                }
-                printf("Error: Ubicacion de la palabra reservada (PROGRAMA) incorrecta en la linea %d\n",ErrorLinea);
+                printf("Error: Ubicacion de la palabra reservada (PROGRAMA) incorrecta en la linea %d\n",IndiceLinea(Ubicacion,MTokLin));
 
                 if(NProg>1)
-                    printf("Error: Multiples definiciones de la palabra reservada (PROGRAMA) en la linea %d\n",ErrorLinea);
+                    printf("Error: Multiples definiciones de la palabra reservada (PROGRAMA) en la linea %d\n",IndiceLinea(Ubicacion,MTokLin));
             }
             else
                 ErrorP = 1;
@@ -508,18 +515,10 @@ void BuscaProgFP(arregloChar2D *TokensLex,arregloInt2D *MTokLin)
             NFProg++;
             if(i != (MAXTL-1))
             {
-                int ErrorLinea = 0;
                 int Ubicacion = i;
-                for(int j = 0; j<MAXT; j++)
-                {
-                    if (MTokLin->B[j][0] == Ubicacion)
-                    {
-                        ErrorLinea = MTokLin->B[j][1];
-                    }
-                }
-                printf("Error: Ubicacion de la palabra reservada (FINPROG) incorrecta en la linea %d\n",ErrorLinea);
+                printf("Error: Ubicacion de la palabra reservada (FINPROG) incorrecta en la linea %d\n",IndiceLinea(Ubicacion,MTokLin));
                 if(NFProg>1)
-                    printf("Error: Multiples definiciones de la palabra reservada (FINPROG) en la linea %d\n",ErrorLinea);
+                    printf("Error: Multiples definiciones de la palabra reservada (FINPROG) en la linea %d\n",IndiceLinea(Ubicacion,MTokLin));
             }
             else
                 ErrorP = 1;
@@ -528,6 +527,127 @@ void BuscaProgFP(arregloChar2D *TokensLex,arregloInt2D *MTokLin)
     if (ErrorP == 0)
         printf("Error: No se encontro la palabra reservada (FINPROG) en la linea %d\n",MTokLin->B[MAXTL-1][1]);
 
+}
+void VerificaAsig(arregloChar2D *TokensLex,arregloInt2D *MTokLin, int *IAsign)
+{
+    int Ubi = 0;
+    for(int i = 0; i <MAXTL; i++)
+    {
+        if(strcmp(TokensLex->A[i],"=")==0)
+        {
+            IAsign[CIAS] = i;
+            CIAS++;
+        }
+    }
+    for (int j = 0; j<CIAS; j++)
+    {
+        if(strncmp(TokensLex->A[IAsign[j]-1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] -1;
+            printf("Error: Solo se puede usar la asignacion con identificadores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+        if(strncmp(TokensLex->A[IAsign[j]+1],"[val]",5)!=0 && strncmp(TokensLex->A[IAsign[j]+1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] + 1;
+            printf("Error: Solo se puede asignar a identificadores o valores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+    }
+
+}
+void VerificaImprime(arregloChar2D *TokensLex,arregloInt2D *MTokLin, int *IAsign)
+{
+    int Ubi = 0;
+    for(int i = 0; i <MAXTL; i++)
+    {
+        Ubi = i;
+        if(strcmp(TokensLex->A[i],"IMPRIME")==0 && (IndiceLinea(Ubi,MTokLin)!=IndiceLinea(Ubi-1,MTokLin)))
+        {
+            IAsign[CIAS] = i;
+            CIAS++;
+        }
+        else
+        {
+            if(strcmp(TokensLex->A[i],"IMPRIME")==0 && (IndiceLinea(Ubi,MTokLin)==IndiceLinea(Ubi-1,MTokLin)))
+            {
+                printf("Error: La palabra reservada (IMPRIME) no esta al inicio de la linea, en la linea %d\n",IndiceLinea(Ubi,MTokLin));
+            }
+        }
+    }
+
+    for (int j = 0; j<CIAS; j++)
+    {
+        if(((strncmp(TokensLex->A[IAsign[j]+1],"[val]",5)!=0) && (strncmp(TokensLex->A[IAsign[j]+1],"[id]",4)!=0) && (strncmp(TokensLex->A[IAsign[j]+1],"[txt]",5)!=0)&& (IndiceLinea(IAsign[j],MTokLin)==IndiceLinea(IAsign[j]+1,MTokLin))))
+        {
+            Ubi = IAsign[j] + 1;
+            printf("Error: Solo se puede imprimir un identificador, valor o un texto linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+    }
+}
+void VerificaOperAr(arregloChar2D *TokensLex,arregloInt2D *MTokLin, int *IAsign)
+{
+    int Ubi = 0;
+    for(int i = 0; i <MAXTL; i++)
+    {
+        Ubi = i;
+        if((strncmp(TokensLex->A[i],"[op_ar]",7)==0)&&(IndiceLinea(Ubi,MTokLin)==IndiceLinea(Ubi-1,MTokLin)))
+        {
+            IAsign[CIAS] = i;
+            CIAS++;
+        }
+        else
+        {
+            if((strncmp(TokensLex->A[i],"[op_ar]",7)==0)&&(IndiceLinea(Ubi,MTokLin)!=IndiceLinea(Ubi-1,MTokLin)))
+            {
+                printf("Error: El operador aritmetico no puede estar al inicio de la linea, en la linea %d\n",IndiceLinea(Ubi,MTokLin));
+            }
+        }
+    }
+    for (int j = 0; j<CIAS; j++)
+    {
+        if(strncmp(TokensLex->A[IAsign[j]-1],"[val]",5)!=0 && strncmp(TokensLex->A[IAsign[j]-1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] -1;
+            printf("Error: Solo se puede usar operador aritmetico con identificadores o valores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+        if(strncmp(TokensLex->A[IAsign[j]+1],"[val]",5)!=0 && strncmp(TokensLex->A[IAsign[j]+1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] + 1;
+            printf("Error: Solo se puede usar operador aritmetico con identificadores o valores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+    }
+}
+void VerificaOperRel(arregloChar2D *TokensLex,arregloInt2D *MTokLin, int *IAsign)
+{
+    int Ubi = 0;
+    for(int i = 0; i <MAXTL; i++)
+    {
+        Ubi = i;
+        if((strncmp(TokensLex->A[i],"[op_r]",6)==0)&&(IndiceLinea(Ubi,MTokLin)==IndiceLinea(Ubi-1,MTokLin)))
+        {
+            IAsign[CIAS] = i;
+            CIAS++;
+        }
+        else
+        {
+            if((strncmp(TokensLex->A[i],"[op_r]",6)==0)&&(IndiceLinea(Ubi,MTokLin)!=IndiceLinea(Ubi-1,MTokLin)))
+            {
+                printf("Error: El operador relacional no puede estar al inicio de la linea, en la linea %d\n",IndiceLinea(Ubi,MTokLin));
+            }
+        }
+    }
+    for (int j = 0; j<CIAS; j++)
+    {
+        if(strncmp(TokensLex->A[IAsign[j]-1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] -1;
+            printf("Error: Antes de un operador relacional solo se pueden utilizar identificadores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+        if(strncmp(TokensLex->A[IAsign[j]+1],"[val]",5)!=0 && strncmp(TokensLex->A[IAsign[j]+1],"[id]",4)!=0)
+        {
+            Ubi = IAsign[j] + 1;
+            printf("Error: Solo se puede usar operador relacional con identificadores o valores, linea %d\n",IndiceLinea(Ubi,MTokLin));
+        }
+    }
 }
 int main(int argc, char **argv)
 {
@@ -558,6 +678,9 @@ int main(int argc, char **argv)
     initArregloChar2D(&IDXNR,r,c);
     initArregloInt2D(&MTokLin,r1,c1);
     initArregloChar2D(&Errores,r,c);
+
+    int *IAsign;
+    IAsign = malloc(50*(sizeof (int)));
 
 	if (argc>1)
     {
@@ -671,8 +794,30 @@ int main(int argc, char **argv)
     }
     printf("\n\n");
     BuscaProgFP(&TokensLex,&MTokLin);
+    printf("\n\n");
 
+    VerificaAsig(&TokensLex, &MTokLin, IAsign);
+    printf("\n\n");
+    CIAS = 0;
+    free(IAsign);
 
+    IAsign = malloc(50*(sizeof (int)));
+    VerificaImprime(&TokensLex, &MTokLin, IAsign);
+    printf("\n\n");
+
+    CIAS = 0;
+    free(IAsign);
+
+    IAsign = malloc(50*(sizeof (int)));
+    VerificaOperAr(&TokensLex, &MTokLin, IAsign);
+    printf("\n\n");
+
+    CIAS = 0;
+    free(IAsign);
+
+    IAsign = malloc(50*(sizeof (int)));
+    VerificaOperRel(&TokensLex, &MTokLin, IAsign);
+    printf("\n\n");
 
     liberaArregloChar2D(&PR);
     liberaArregloChar2D(&OAR);
@@ -684,5 +829,6 @@ int main(int argc, char **argv)
     liberaArregloChar2D(&IDXNR);
     liberaArregloInt2D(&MTokLin);
     liberaArregloChar2D(&Errores);
+    free(IAsign);
     return 0;
 }
